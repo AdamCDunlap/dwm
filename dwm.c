@@ -179,8 +179,8 @@ static void detachstack(Client *c);
 static Monitor *dirtomon(int dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
-static void drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]);
-static void drawtext(const char *text, unsigned long col[ColLast], Bool invert);
+static void drawsquare(Bool filled, Bool empty, unsigned long col[ColLast]);
+static void drawtext(const char *text, unsigned long col[ColLast], Bool Pad);
 static void drawcoloredtext(char *text);
 static void enternotify(XEvent *e);
 static void expose(XEvent *e);
@@ -784,14 +784,10 @@ drawcoloredtext(char *text) {
 			if( first ) dc.x += ( dc.font.ascent + dc.font.descent ) / 2;
 			first = False;
 		}
-        //else if( first ) {
-		//	ox = dc.x += textnw(&c,1);
-		//}
 		*ptr = c; // change the text back
 		col = dc.colors[ c-1 ]; // set the color
 		buf = ++ptr; // skip past the control character and set buf to same value
 	}
-	//drawtext(buf, col, True); //write the last set of characters
 	drawtext(buf, col, False); //write the last set of characters
 	dc.x = ox;
 }
@@ -811,14 +807,13 @@ drawbar(Monitor *m) {
 	dc.x = 0;
 	for(i = 0; i < LENGTH(tags); i++) {
 		dc.w = TEXTW(tags[i]);
-		col = m->tagset[m->seltags] & 1 << i ? dc.colors[1] : dc.colors[0];
-		drawtext(tags[i], col, urg & 1 << i);
-		drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
-		           occ & 1 << i, urg & 1 << i, col);
+		col = dc.colors[ (m->tagset[m->seltags] & 1 << i ? 1:(urg & 1 << i ? 2:0))];
+		drawtext(tags[i], col, True);
+		drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i, occ & 1 << i, col);
 		dc.x += dc.w;
 	}
 	dc.w = blw = TEXTW(m->ltsymbol);
-	drawtext(m->ltsymbol, dc.colors[0], False);
+	drawtext(m->ltsymbol, dc.colors[0], True);
 	dc.x += dc.w;
 	x = dc.x;
 	dc.w = TEXTW(stext);
@@ -832,8 +827,9 @@ drawbar(Monitor *m) {
 		dc.x = x;
 		if(m->sel) {
 			col = m == selmon ? dc.colors[1] : dc.colors[0];
-			drawtext(m->sel->name, col, False);
-			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
+			drawtext(m->sel->name, col, True);
+			drawsquare(m->sel->isfixed, m->sel->isfloating, col);
+
 		}
 		else
 			drawtext(NULL, dc.colors[0], False);
@@ -851,10 +847,9 @@ drawbars(void) {
 }
 
 void
-drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]) {
+drawsquare(Bool filled, Bool empty, unsigned long col[ColLast]) {
 	int x;
-
-	XSetForeground(dpy, dc.gc, col[invert ? ColBG : ColFG]);
+	XSetForeground(dpy, dc.gc, col[ ColFG ]);
 	x = (dc.font.ascent + dc.font.descent + 2) / 4;
 	if(filled)
 		XFillRectangle(dpy, dc.drawable, dc.gc, dc.x+1, dc.y+1, x+1, x+1);
@@ -863,18 +858,17 @@ drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]) {
 }
 
 void
-drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
+drawtext(const char *text, unsigned long col[ColLast], Bool pad) {
 	char buf[256];
 	int i, x, y, h, len, olen;
-
-	XSetForeground(dpy, dc.gc, col[invert ? ColFG : ColBG]);
+	XSetForeground(dpy, dc.gc, col[ ColBG ]);
 	XFillRectangle(dpy, dc.drawable, dc.gc, dc.x, dc.y, dc.w, dc.h);
 	if(!text)
 		return;
 	olen = strlen(text);
-	h = dc.font.ascent + dc.font.descent;
-	y = dc.y + (dc.h / 2) - (h / 2) + dc.font.ascent;
-	x = dc.x + (h / 2);
+	h = pad ? (dc.font.ascent + dc.font.descent) : 0;
+	y = dc.y + ((dc.h + dc.font.ascent - dc.font.descent) / 2);
+ 	x = dc.x + (h / 2);
 	/* shorten text if necessary */
 	for(len = MIN(olen, sizeof buf); len && textnw(text, len) > dc.w - h; len--);
 	if(!len)
@@ -882,7 +876,7 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 	memcpy(buf, text, len);
 	if(len < olen)
 		for(i = len; i && i > len - 3; buf[--i] = '.');
-	XSetForeground(dpy, dc.gc, col[invert ? ColBG : ColFG]);
+	XSetForeground(dpy, dc.gc, col[ ColFG ]);
 	if(dc.font.set)
 		XmbDrawString(dpy, dc.drawable, dc.font.set, dc.gc, x, y, buf, len);
 	else
@@ -1713,12 +1707,11 @@ setup(void) {
 	cursor[CurResize] = XCreateFontCursor(dpy, XC_sizing);
 	cursor[CurMove] = XCreateFontCursor(dpy, XC_fleur);
 	/* init appearance */
-	dc.colors[0][ColBorder] = getcolor(colors[0][ColBorder]);
-	dc.colors[0][ColBG] =     getcolor(colors[0][ColBG]);
-	dc.colors[0][ColFG] =     getcolor(colors[0][ColFG]);
-	dc.colors[1][ColBorder] = getcolor(colors[1][ColBorder]);
-	dc.colors[1][ColBG] =     getcolor(colors[1][ColBG]);
-	dc.colors[1][ColFG] =     getcolor(colors[1][ColFG]);
+	for(int i=0; i<LENGTH(colors); i++) {
+        for(int j=0; j<ColLast; j++) {
+            dc.colors[i][j] = getcolor(colors[i][j]);
+        }
+	}
 	dc.drawable = XCreatePixmap(dpy, root, DisplayWidth(dpy, screen), bh, DefaultDepth(dpy, screen));
 	dc.gc = XCreateGC(dpy, root, 0, NULL);
 	XSetLineAttributes(dpy, dc.gc, 1, LineSolid, CapButt, JoinMiter);
