@@ -66,6 +66,8 @@ enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms *
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast };             /* clicks */
 
+#include "colors.h"
+
 typedef union {
 	int i;
 	unsigned int ui;
@@ -100,8 +102,7 @@ struct Client {
 
 typedef struct {
 	int x, y, w, h;
-	unsigned long norm[ColLast];
-	unsigned long sel[ColLast];
+    unsigned long colors[LENGTH(colors)][ColLast];
 	Drawable drawable;
 	GC gc;
 	struct {
@@ -180,6 +181,7 @@ static void drawbar(Monitor *m);
 static void drawbars(void);
 static void drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]);
 static void drawtext(const char *text, unsigned long col[ColLast], Bool invert);
+static void drawcoloredtext(char *text);
 static void enternotify(XEvent *e);
 static void expose(XEvent *e);
 static void focus(Client *c);
@@ -751,6 +753,49 @@ dirtomon(int dir) {
 	return m;
 }
 
+
+void
+drawcoloredtext(char *text) {
+	Bool first=True;
+	char *buf = text, *ptr = buf, c = 1;
+	unsigned long *col = dc.colors[0];
+	int i, ox = dc.x;
+
+    // Increase dc.x by size of control characters
+    while (*ptr) {
+        for(; *ptr < 0 || *ptr > LENGTH(colors); ptr++);
+        if( !*ptr ) break;
+        dc.x += textnw(ptr, 1);
+        ptr++;
+    }
+    ptr = buf;
+    ox = dc.x;
+
+	while( *ptr ) {
+            // go until a control code is reached
+		for( i = 0; *ptr < 0 || *ptr > LENGTH(colors); i++, ptr++); 
+		if( !*ptr ) break; // If we're at the end of the string, break
+		c=*ptr; // c is the control code
+		*ptr=0; // Set a temp stopping point for drawtext
+		if( i ) { // if the first character was NOT a control character
+			dc.w = selmon->ww - dc.x;
+			drawtext(buf, col, first); // Draw each set of characters
+			dc.x += textnw(buf, i) ;// + textnw(&c,1);
+			if( first ) dc.x += ( dc.font.ascent + dc.font.descent ) / 2;
+			first = False;
+		}
+        //else if( first ) {
+		//	ox = dc.x += textnw(&c,1);
+		//}
+		*ptr = c; // change the text back
+		col = dc.colors[ c-1 ]; // set the color
+		buf = ++ptr; // skip past the control character and set buf to same value
+	}
+	//drawtext(buf, col, True); //write the last set of characters
+	drawtext(buf, col, False); //write the last set of characters
+	dc.x = ox;
+}
+
 void
 drawbar(Monitor *m) {
 	int x;
@@ -766,14 +811,14 @@ drawbar(Monitor *m) {
 	dc.x = 0;
 	for(i = 0; i < LENGTH(tags); i++) {
 		dc.w = TEXTW(tags[i]);
-		col = m->tagset[m->seltags] & 1 << i ? dc.sel : dc.norm;
+		col = m->tagset[m->seltags] & 1 << i ? dc.colors[1] : dc.colors[0];
 		drawtext(tags[i], col, urg & 1 << i);
 		drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
 		           occ & 1 << i, urg & 1 << i, col);
 		dc.x += dc.w;
 	}
 	dc.w = blw = TEXTW(m->ltsymbol);
-	drawtext(m->ltsymbol, dc.norm, False);
+	drawtext(m->ltsymbol, dc.colors[0], False);
 	dc.x += dc.w;
 	x = dc.x;
 	dc.w = TEXTW(stext);
@@ -782,16 +827,16 @@ drawbar(Monitor *m) {
 		dc.x = x;
 		dc.w = m->ww - x;
 	}
-	drawtext(stext, dc.norm, False);
+	drawcoloredtext(stext);
 	if((dc.w = dc.x - x) > bh) {
 		dc.x = x;
 		if(m->sel) {
-			col = m == selmon ? dc.sel : dc.norm;
+			col = m == selmon ? dc.colors[1] : dc.colors[0];
 			drawtext(m->sel->name, col, False);
 			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
 		}
 		else
-			drawtext(NULL, dc.norm, False);
+			drawtext(NULL, dc.colors[0], False);
 	}
 	XCopyArea(dpy, dc.drawable, m->barwin, dc.gc, 0, 0, m->ww, bh, 0, 0);
 	XSync(dpy, False);
@@ -887,7 +932,7 @@ focus(Client *c) {
 		detachstack(c);
 		attachstack(c);
 		grabbuttons(c, True);
-		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
+		XSetWindowBorder(dpy, c->win, dc.colors[1][ColBorder]);
 		setfocus(c);
 	}
 	else {
@@ -1179,7 +1224,7 @@ manage(Window w, XWindowAttributes *wa) {
 
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
-	XSetWindowBorder(dpy, w, dc.norm[ColBorder]);
+	XSetWindowBorder(dpy, w, dc.colors[0][ColBorder]);
 	configure(c); /* propagates border_width, if size doesn't change */
 	updatewindowtype(c);
 	updatesizehints(c);
@@ -1668,12 +1713,12 @@ setup(void) {
 	cursor[CurResize] = XCreateFontCursor(dpy, XC_sizing);
 	cursor[CurMove] = XCreateFontCursor(dpy, XC_fleur);
 	/* init appearance */
-	dc.norm[ColBorder] = getcolor(normbordercolor);
-	dc.norm[ColBG] = getcolor(normbgcolor);
-	dc.norm[ColFG] = getcolor(normfgcolor);
-	dc.sel[ColBorder] = getcolor(selbordercolor);
-	dc.sel[ColBG] = getcolor(selbgcolor);
-	dc.sel[ColFG] = getcolor(selfgcolor);
+	dc.colors[0][ColBorder] = getcolor(colors[0][ColBorder]);
+	dc.colors[0][ColBG] =     getcolor(colors[0][ColBG]);
+	dc.colors[0][ColFG] =     getcolor(colors[0][ColFG]);
+	dc.colors[1][ColBorder] = getcolor(colors[1][ColBorder]);
+	dc.colors[1][ColBG] =     getcolor(colors[1][ColBG]);
+	dc.colors[1][ColFG] =     getcolor(colors[1][ColFG]);
 	dc.drawable = XCreatePixmap(dpy, root, DisplayWidth(dpy, screen), bh, DefaultDepth(dpy, screen));
 	dc.gc = XCreateGC(dpy, root, 0, NULL);
 	XSetLineAttributes(dpy, dc.gc, 1, LineSolid, CapButt, JoinMiter);
@@ -1860,7 +1905,7 @@ unfocus(Client *c, Bool setfocus) {
 	if(!c)
 		return;
 	grabbuttons(c, False);
-	XSetWindowBorder(dpy, c->win, dc.norm[ColBorder]);
+	XSetWindowBorder(dpy, c->win, dc.colors[0][ColBorder]);
 	if(setfocus) {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 		XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
