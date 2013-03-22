@@ -761,7 +761,7 @@ drawcoloredtext(char *text) {
 	unsigned long *col = dc.colors[0];
 	int i, ox = dc.x;
 
-    // Increase dc.x by size of control characters
+    /* Increase dc.x by size of control characters*/
     while (*ptr) {
         for(; *ptr < 0 || *ptr > LENGTH(colors); ptr++);
         if( !*ptr ) break;
@@ -772,23 +772,23 @@ drawcoloredtext(char *text) {
     ox = dc.x;
 
 	while( *ptr ) {
-            // go until a control code is reached
+            /* go until a control code is reached*/
 		for( i = 0; *ptr < 0 || *ptr > LENGTH(colors); i++, ptr++); 
-		if( !*ptr ) break; // If we're at the end of the string, break
-		c=*ptr; // c is the control code
-		*ptr=0; // Set a temp stopping point for drawtext
-		if( i ) { // if the first character was NOT a control character
+		if( !*ptr ) break; /* If we're at the end of the string, break*/
+		c=*ptr; /* c is the control code*/
+		*ptr=0; /* Set a temp stopping point for drawtext*/
+		if( i ) { /* if the first character was NOT a control character*/
 			dc.w = selmon->ww - dc.x;
-			drawtext(buf, col, first); // Draw each set of characters
-			dc.x += textnw(buf, i) ;// + textnw(&c,1);
+			drawtext(buf, col, first); /* Draw each set of characters*/
+			dc.x += textnw(buf, i);
 			if( first ) dc.x += ( dc.font.ascent + dc.font.descent ) / 2;
 			first = False;
 		}
-		*ptr = c; // change the text back
-		col = dc.colors[ c-1 ]; // set the color
-		buf = ++ptr; // skip past the control character and set buf to same value
+		*ptr = c; /* change the text back*/
+		col = dc.colors[ c-1 ]; /* set the color*/
+		buf = ++ptr; /* skip past the control character and set buf to same value*/
 	}
-	drawtext(buf, col, False); //write the last set of characters
+	drawtext(buf, col, False); /*write the last set of characters*/
 	dc.x = ox;
 }
 
