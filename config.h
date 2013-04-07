@@ -16,8 +16,8 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class      instance    title       tags mask     isfloating   monitor */
-	{ "Gimp",     NULL,       NULL,       0,            True,        -1 },
 	{ "Stopwatch",NULL,       NULL,       0,            True,        -1 },
+	{ "Chromium" ,NULL,       NULL,       1,            False,       -1 },
 };
 
 /* layout(s) */
@@ -51,18 +51,17 @@ static const Layout layouts[] = {
 static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", colors[0][2], "-nf", colors[0][1], "-sb", colors[1][2], "-sf", colors[1][1], NULL };
 static const char *rootdmenucmd[] = { "dmenu_run_root", "-fn", font, "-nb", "#204a87", "-nf", "#ffffff", "-sb", colors[1][2], "-sf", colors[1][1], NULL };
 static const char *termcmd[]  = { "terminal", NULL };
+static const char *termcmdNoTransparency[]  = { "terminal", "-tr", NULL };
 static const char *internetcmd[]  = { "chromium", NULL };
 static const char *calculatecmd[] = { "calculate", NULL };
 static const char *changebgcmd[] = {"changebg", NULL };
-static const char *changebgspecialcmd[] = {"changebg", "-p", NULL };
-static const char *changebgspecialrefreshcmd[] = {"changebg", "-p", "-r", NULL };
 static const char *changebgrefreshcmd[] = {"changebg", "-r", NULL };
 static const char *invertdisplay[] = {"inv", NULL };
 static const char *hibernatecmd[] = {"systemctl", "hibernate", NULL };
 static const char *suspendcmd[] = {"mysuspend", NULL };
 static const char *screenshotscrcmd[] = {"screenshot", "scr", NULL };
 static const char *screenshotareacmd[] = {"screenshot", "area", NULL };
-static const char *vimcmd[] = {"urxvtc", "-e", "vim", NULL};
+static const char *vimcmd[] = {"terminal", "-e", "vim", NULL};
 static const char *xkillcmd[] = {"xkill", NULL};
 static const char *selectumountcmd[] = {"select-umount", NULL};
 static const char *selectmountcmd[] = {"select-mount", NULL};
@@ -82,14 +81,15 @@ static Key keys[] = {
     { MODKEY,           XK_x,           spawn,          {.v = xkillcmd} },
     { MODKEY,           XK_u,           spawn,          {.v = selectumountcmd} },
     { MODKEY,           XK_o,           spawn,          {.v = selectmountcmd} },
-    { MODKEY,           XK_m,           spawn,          {.v = mancmd} },
+    { MODKEY,           XK_n,           spawn,          {.v = mancmd} },
     
     { 0,                XK_Print,       spawn,          {.v = screenshotscrcmd} },
     { ShiftMask,        XK_Print,       spawn,          {.v = screenshotareacmd} },
 
 	{ MODKEY,           XK_p,           spawn,          {.v = dmenucmd } },
 	{ MODKEY|ShiftMask, XK_p,           spawn,          {.v = rootdmenucmd } },
-	{ MODKEY|ShiftMask, XK_Return,      spawn,          {.v = termcmd } },
+	{ MODKEY|ControlMask|ShiftMask, XK_Return,      spawn,          {.v = termcmd } },
+	{ MODKEY|ShiftMask, XK_Return,      spawn,          {.v = termcmdNoTransparency } },
 	{ MODKEY|ShiftMask, XK_i,           spawn,          {.v = internetcmd } },
     { MODKEY,           XK_c,           spawn,          {.v = calculatecmd } },
 	{ MODKEY,           XK_b,           togglebar,      {0} },
