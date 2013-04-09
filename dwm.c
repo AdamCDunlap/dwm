@@ -93,7 +93,7 @@ struct Client {
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh;
 	int bw, oldbw;
 	unsigned int tags;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, hideborder;
 	Client *next;
 	Client *snext;
 	Monitor *mon;
@@ -154,6 +154,7 @@ typedef struct {
 	unsigned int tags;
 	Bool isfloating;
 	int monitor;
+    Bool hideborder;
 } Rule;
 
 /* function declarations */
@@ -346,7 +347,7 @@ applyrules(Client *c) {
 	XClassHint ch = { NULL, NULL };
 
 	/* rule matching */
-	c->isfloating = c->tags = 0;
+	c->isfloating = c->tags = c->hideborder = 0;
 	XGetClassHint(dpy, c->win, &ch);
 	class    = ch.res_class ? ch.res_class : broken;
 	instance = ch.res_name  ? ch.res_name  : broken;
@@ -359,6 +360,7 @@ applyrules(Client *c) {
 		{
 			c->isfloating = r->isfloating;
 			c->tags |= r->tags;
+			c->hideborder |= r->hideborder;
 			for(m = mons; m && m->num != r->monitor; m = m->next);
 			if(m)
 				c->mon = m;
@@ -1215,7 +1217,8 @@ manage(Window w, XWindowAttributes *wa) {
 	/* only fix client y-offset, if the client center might cover the bar */
 	c->y = MAX(c->y, ((c->mon->by == c->mon->my) && (c->x + (c->w / 2) >= c->mon->wx)
 	           && (c->x + (c->w / 2) < c->mon->wx + c->mon->ww)) ? bh : c->mon->my);
-	c->bw = borderpx;
+	if(!c->hideborder)
+		c->bw = borderpx;
 
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);

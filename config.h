@@ -15,9 +15,9 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class      instance    title       tags mask     isfloating   monitor */
-	{ "Stopwatch",NULL,       NULL,       0,            True,        -1 },
-	{ "Chromium" ,NULL,       NULL,       1,            False,       -1 },
+	/* class      instance    title       tags mask     isfloating   monitor    hideborder */
+	{ "Stopwatch",NULL,       NULL,       0,            True,        -1,        False },
+	{ "Chromium" ,NULL,       NULL,       1,            False,       -1,        True },
 };
 
 /* layout(s) */
