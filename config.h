@@ -51,7 +51,7 @@ static const Layout layouts[] = {
 static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", colors[0][2], "-nf", colors[0][1], "-sb", colors[1][2], "-sf", colors[1][1], NULL };
 static const char *rootdmenucmd[] = { "dmenu_run_root", "-fn", font, "-nb", "#204a87", "-nf", "#ffffff", "-sb", colors[1][2], "-sf", colors[1][1], NULL };
 static const char *termcmd[]  = { "terminal", NULL };
-static const char *termcmdNoTransparency[]  = { "terminal", "-tr", NULL };
+static const char *termcmdNoTransparency[]  = { "terminal", "+tr", NULL };
 static const char *internetcmd[]  = { "chromium", NULL };
 static const char *calculatecmd[] = { "calculate", NULL };
 static const char *changebgcmd[] = {"changebg", NULL };
@@ -88,8 +88,8 @@ static Key keys[] = {
 
 	{ MODKEY,           XK_p,           spawn,          {.v = dmenucmd } },
 	{ MODKEY|ShiftMask, XK_p,           spawn,          {.v = rootdmenucmd } },
-	{ MODKEY|ControlMask|ShiftMask, XK_Return,      spawn,          {.v = termcmd } },
-	{ MODKEY|ShiftMask, XK_Return,      spawn,          {.v = termcmdNoTransparency } },
+	{ MODKEY|ShiftMask, XK_Return,      spawn,          {.v = termcmd } },
+	{ MODKEY|ControlMask|ShiftMask, XK_Return,      spawn,          {.v = termcmdNoTransparency } },
 	{ MODKEY|ShiftMask, XK_i,           spawn,          {.v = internetcmd } },
     { MODKEY,           XK_c,           spawn,          {.v = calculatecmd } },
 	{ MODKEY,           XK_b,           togglebar,      {0} },
