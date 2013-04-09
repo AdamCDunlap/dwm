@@ -1154,11 +1154,12 @@ isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info) {
 void
 keypress(XEvent *e) {
 	unsigned int i;
+    int keysyms_per_keycode_return;
 	KeySym keysym;
 	XKeyEvent *ev;
 
 	ev = &e->xkey;
-	keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+    keysym = *XGetKeyboardMapping(dpy,(KeyCode)ev->keycode,1,&keysyms_per_keycode_return);
 	for(i = 0; i < LENGTH(keys); i++)
 		if(keysym == keys[i].keysym
 		&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
